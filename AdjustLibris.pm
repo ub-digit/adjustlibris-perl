@@ -24,7 +24,11 @@ sub apply {
     $record = rule_035_9_to_a($record);
     $record = rule_035_5($record);
     $record = rule_082($record);
-    
+    $record = rule_084_5_2($record);
+    $record = rule_084_kssb($record);
+    $record = rule_084_5_not2($record);
+    $record = rule_084_to_089($record);
+
     return $record;
 }
 
@@ -192,6 +196,88 @@ sub rule_082 {
     
     return $record;
 }
+
+# Remove all 084 where neither $5 nor $2 exists.
+sub rule_084_5_2 {
+    my ($record) = @_;
+    $record = clone($record);
+
+    foreach $f084 ($record->field('084')) {
+        if (!$f084->subfield('5') && !$f084->subfield('2')) {
+            $record->delete_field($f084);
+        }
+    }
+    
+    return $record;
+}
+
+# Deduplicate 084 on $a when $2 starts with kssb. Keep highest kssb version.
+sub rule_084_kssb {
+    my ($record) = @_;
+    $record = clone($record);
+
+    my @found_fields = ();
+    my @fields_to_remove = ();
+    my %highest_kssb_for_a = ();
+
+    foreach $f084 ($record->field('084')) {
+        if ($f084->subfield('a') && $f084->subfield('2') =~ /^kssb/) {
+            if (exists_in_arrayref($f084->as_string('a', '^^!!^^'), \@found_fields)) {
+                my $kssb_value = $f084->subfield('2');
+                $kssb_value =~ s/^kssb\/(\d+).*/$1/;
+                if ($kssb_value <= $highest_kssb_for_a{$f084->subfield('a')}->{kssb}) {
+                    push(@fields_to_remove, $f084);
+                } else {
+                    push(@fields_to_remove, $highest_kssb_for_a{$f084->subfield('a')}->{field});
+                    $highest_kssb_for_a{$f084->subfield('a')} = {field => $f084, kssb => $kssb_value};
+                }
+            } else {
+                push(@found_fields, $f084->as_string('a', '^^!!^^'));
+                my $kssb_value = $f084->subfield('2');
+                $kssb_value =~ s/^kssb\/(\d+).*/$1/;
+                $highest_kssb_for_a{$f084->subfield('a')} = {field => $f084, kssb => $kssb_value};
+            }
+        }
+    }
+
+    $record->delete_fields(@fields_to_remove);
+    
+    return $record;
+}
+
+# 084 with $5 and not $2, remove unless $5 contains Ge
+sub rule_084_5_not2 {
+    my ($record) = @_;
+    $record = clone($record);
+
+    foreach $f084 ($record->field('084')) {
+        if ($f084->subfield('5') && !$f084->subfield('2')) {
+            if ($f084->subfield('5') ne "Ge") {
+                $record->delete_field($f084);
+            }
+        }
+    }
+    
+    return $record;
+}
+
+# 084 without $2 or where $2 does not start with kssb, convert to 089
+sub rule_084_to_089 {
+    my ($record) = @_;
+    $record = clone($record);
+
+    foreach $f084 ($record->field('084')) {
+        if (!$f084->subfield('2') || $f084->subfield('2') !~ /^kssb/) {
+            my $f089 = $f084->clone();
+            $f089->set_tag('089');
+            $record->append_fields($f089);
+            $record->delete_field($f084);
+        }
+    }
+    
+    return $record;
+}
+
 
 
 

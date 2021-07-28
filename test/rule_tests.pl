@@ -16,6 +16,7 @@ sub test_all {
     test_all_rule_030();
     test_all_rule_035();
     test_all_rule_082();
+    test_all_rule_084();
 }
 
 # Test rules applying to 041
@@ -203,4 +204,92 @@ sub test_rule_082 {
     my $new_record_count = @new_fields;
     assert_equals(1, $new_record_count, "should deduplicate 082 (after dedup)");
 }    
+
+# Test rules applying to 084
+sub test_all_rule_084 {
+    test_rule_084_5_2();
+    test_rule_084_kssb();
+    test_rule_084_5_not2();
+    test_rule_084_to_089();
+}
+
+sub test_rule_084_5_2 {
+    my $record_084_without_sub5_2 =
+        AdjustLibris::open_record("test/data/rule_084-without_sub5_2.mrc");
+
+    my $new_record;
+    $new_record = AdjustLibris::rule_084_5_2($record_084_without_sub5_2);
+    assert_null($new_record->field('084'), "should remove field if no $5 or $2 is present");
+}
+
+sub test_rule_084_kssb {
+    my $record_084_with_multiple_kssb =
+        AdjustLibris::open_record("test/data/rule_084-with_multiple_kssb.mrc");
+
+    my $new_record;
+    $new_record = AdjustLibris::rule_084_kssb($record_084_with_multiple_kssb);
+
+    my @fields = $new_record->field('084');
+    my $field_count = @fields;
+    assert_equals(3, $field_count,
+                  "should deduplicate 084 based on $a when $2 starts with kssb (field count)");
+    assert_equals("F:do", $fields[0]->subfield('a'),
+                  "should deduplicate 084 based on $a when $2 starts with kssb (field 0)");
+    assert_equals("kssb/8 (machine generated)", $fields[0]->subfield('2'),
+                  "should deduplicate 084 based on $a when $2 starts with kssb (field 0)");
+    assert_equals("F:fno", $fields[1]->subfield('a'),
+                  "should deduplicate 084 based on $a when $2 starts with kssb (field 1)");
+    assert_equals("kssb/9", $fields[1]->subfield('2'),
+                  "should deduplicate 084 based on $a when $2 starts with kssb (field 1)");
+    assert_equals("F:other", $fields[2]->subfield('a'),
+                  "should deduplicate 084 based on $a when $2 starts with kssb (field 2)");
+    assert_equals("not same", $fields[2]->subfield('2'),
+                  "should deduplicate 084 based on $a when $2 starts with kssb (field 2)");
+}
+
+sub test_rule_084_5_not2 {
+    my $record_084_with_sub5_not2 =
+        AdjustLibris::open_record("test/data/rule_084-with_sub5_not2.mrc");
+
+    my $new_record;
+    $new_record = AdjustLibris::rule_084_5_not2($record_084_with_sub5_not2);
+    my @fields = $new_record->field('084');
+    my $field_count = @fields;
+    assert_equals(2, $field_count,
+                  "should remove field if $5 is present, but not $2 except if $5 contains Ge (field count)");
+    assert_equals("F:do", $fields[0]->subfield('a'),
+                  "should remove field if $5 is present, but not $2 except if $5 contains Ge (field 0)");
+    assert_null($fields[0]->subfield('5'),
+                "should remove field if $5 is present, but not $2 except if $5 contains Ge (field 0)");
+    assert_equals("F:other", $fields[1]->subfield('a'),
+                  "should remove field if $5 is present, but not $2 except if $5 contains Ge (field 1)");
+    assert_equals("Ge", $fields[1]->subfield('5'),
+                  "should remove field if $5 is present, but not $2 except if $5 contains Ge (field 1)");
+}
+
+sub test_rule_084_to_089 {
+    my $record_084_with_sub5_not2_to_089 =
+        AdjustLibris::open_record("test/data/rule_084-with_sub5_not2_to_089.mrc");
+
+    my $new_record;
+    $new_record = AdjustLibris::rule_084_to_089($record_084_with_sub5_not2_to_089);
+    my @fields = $new_record->field('084');
+    my $field_count = @fields;
+    assert_equals(1, $field_count,
+                  "should convert field to 089 if $2 is not present or if $2 does not start with kssb (field count 084)");
+    assert_equals("F:do", $fields[0]->subfield('a'),
+                  "should convert field to 089 if $2 is not present or if $2 does not start with kssb (field 084)");
+    assert_null($fields[0]->subfield('5'),
+                "should convert field to 089 if $2 is not present or if $2 does not start with kssb (field 084)");
+    
+    @fields = $new_record->field('089');
+    $field_count = @fields;
+    assert_equals(1, $field_count,
+                  "should convert field to 089 if $2 is not present or if $2 does not start with kssb (field count 089)");
+    assert_equals("F:other", $fields[0]->subfield('a'),
+                  "should convert field to 089 if $2 is not present or if $2 does not start with kssb (field 089)");
+    assert_equals("Ge", $fields[0]->subfield('5'),
+                  "should convert field to 089 if $2 is not present or if $2 does not start with kssb (field 089)");
+}
+
 
