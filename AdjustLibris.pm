@@ -28,6 +28,7 @@ sub apply {
     $record = rule_084_kssb($record);
     $record = rule_084_5_not2($record);
     $record = rule_084_to_089($record);
+    $record = rule_130($record);
 
     return $record;
 }
@@ -273,6 +274,23 @@ sub rule_084_to_089 {
             $record->append_fields($f089);
             $record->delete_field($f084);
         }
+    }
+    
+    return $record;
+}
+
+# If LEADER7 is s and 130 exists, convert it to 222
+sub rule_130 {
+    my ($record) = @_;
+    $record = clone($record);
+    my $leader = $record->leader();
+    my $type = substr($leader, 7, 1);
+    my $f130 = $record->field('130');
+    if ($f130 && $type eq "s") {
+        my $f222 = $f130->clone();
+        $f222->set_tag('222');
+        $record->append_fields($f222);
+        $record->delete_field($f130);
     }
     
     return $record;
