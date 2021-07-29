@@ -48,6 +48,7 @@ sub apply {
     $record = rule_remove_hyphens_except_issn($record, "785");
     $record = rule_remove_hyphens_except_issn($record, "787");
     # Rules for 852, 866
+    $record = rule_976($record);
     
     return $record;
 }
@@ -380,6 +381,24 @@ sub rule_remove_hyphens_except_issn {
     $record = remove_hyphens_except_issn($record, $tag, ["w", "x", "z"]);
     return $record;
 }
+
+# Remove 976$a and move $b to $a if $b exists
+sub rule_976 {
+    my ($record) = @_;
+    $record = clone($record);
+
+    foreach my $f976 ($record->field('976')) {
+        my $subf_a = $f976->subfield('a');
+        my $subf_b = $f976->subfield('b');
+        if ($subf_a && $subf_b) {
+            $f976->update('a' => $subf_b);
+            $f976->delete_subfield('b');
+        }
+    }
+    
+    return $record;
+}
+
 
 
 sub writer {

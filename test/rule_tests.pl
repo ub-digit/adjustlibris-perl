@@ -23,6 +23,7 @@ sub test_all {
     test_all_rule_440();
     test_all_rule_830();
     test_all_rule_remove_hyphens_except_issn();
+    test_all_rule_976();
 }
 
 # Test rules applying to 041
@@ -437,5 +438,23 @@ sub test_rule_remove_hyphens_except_issn {
                   "should remove hyphens in FIELD\$w FIELD\$x and FIELD\$z (field2 x)");
     assert_equals('1129233333', $fields[2]->subfield('z'),
                   "should remove hyphens in FIELD\$w FIELD\$x and FIELD\$z (field2 z)");
+}
+
+
+# Test rules applying to 976
+sub test_all_rule_976 {
+    test_rule_976();
+}
+
+sub test_rule_976 {
+    my $record_976 =
+        AdjustLibris::open_record("test/data/rule_976.mrc");
+
+    my $new_record;
+    $new_record = AdjustLibris::rule_976($record_976);
+    assert_equals("Test Test Test", $new_record->subfield('976', 'a'),
+                  "should remove 976$a and move \$b to \$a");
+    assert_null($new_record->subfield('976', 'b'),
+                "should remove 976$a and move \$b to \$a");
 }
 
