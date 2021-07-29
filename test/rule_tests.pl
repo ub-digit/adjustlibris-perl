@@ -18,6 +18,7 @@ sub test_all {
     test_all_rule_082();
     test_all_rule_084();
     test_all_rule_130();
+    test_all_rule_222();
 }
 
 # Test rules applying to 041
@@ -313,4 +314,19 @@ sub test_rule_130 {
     $new_record = AdjustLibris::rule_130($record_130_not_s);
     assert_null($new_record->field('222'), "should convert to 222 if LEADER7 is s");
     assert_equals("Title with - in its name", $new_record->subfield('130', 'a'), "should convert to 222 if LEADER7 is s");
+}
+
+# Test rules applying to 222
+sub test_all_rule_222 {
+    test_rule_222();
+}
+
+sub test_rule_222 {
+    my $record_222 =
+        AdjustLibris::open_record("test/data/rule_222.mrc");
+
+    my $new_record;
+    $new_record = AdjustLibris::rule_222($record_222);
+    assert_equals("Title with / in its name", $new_record->subfield('222', 'a'),
+                  "should replace _-_ with _/_ if present in $a");
 }

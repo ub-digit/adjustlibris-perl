@@ -29,6 +29,7 @@ sub apply {
     $record = rule_084_5_not2($record);
     $record = rule_084_to_089($record);
     $record = rule_130($record);
+    $record = rule_222($record);
 
     return $record;
 }
@@ -296,6 +297,14 @@ sub rule_130 {
     return $record;
 }
 
+# If 222$a contains ' - ', replace it with ' / '
+sub rule_222 {
+    my ($record) = @_;
+    $record = clone($record);
+    $record = replace_dashed_separator($record, "222", "a");
+    return $record;
+}
+
 
 
 
@@ -360,6 +369,23 @@ sub exists_in_arrayref {
         }
     }
     return 0;
+}
+
+# Replace ' - ' with ' / ' in specified field and subfield
+sub replace_dashed_separator {
+    my ($record, $tag, $subfield_code) = @_;
+    my @fields = $record->field($tag);
+    foreach $field (@fields) {
+        my @all_subfields = $field->subfields();
+        $field->delete_subfield(match => qr/.*/);
+        foreach my $subf (@all_subfields) {
+            if($subf->[0] eq $subfield_code) {
+                $subf->[1] =~ s/ - / \/ /g;
+            }
+            $field->add_subfields($subf->[0] => $subf->[1]);
+        }
+    }
+    return $record;
 }
 
 1;
