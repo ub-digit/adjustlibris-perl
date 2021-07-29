@@ -34,7 +34,21 @@ sub apply {
     $record = rule_599_remove($record);
     $record = rule_440($record);
     $record = rule_830($record);
-
+    # Rules for 650, 648, 651, 655
+    $record = rule_remove_hyphens_except_issn($record, "440");
+    $record = rule_remove_hyphens_except_issn($record, "760");
+    $record = rule_remove_hyphens_except_issn($record, "762");
+    $record = rule_remove_hyphens_except_issn($record, "765");
+    $record = rule_remove_hyphens_except_issn($record, "767");
+    $record = rule_remove_hyphens_except_issn($record, "770");
+    $record = rule_remove_hyphens_except_issn($record, "772");
+    $record = rule_remove_hyphens_except_issn($record, "776");
+    $record = rule_remove_hyphens_except_issn($record, "779");
+    $record = rule_remove_hyphens_except_issn($record, "780");
+    $record = rule_remove_hyphens_except_issn($record, "785");
+    $record = rule_remove_hyphens_except_issn($record, "787");
+    # Rules for 852, 866
+    
     return $record;
 }
 
@@ -359,7 +373,13 @@ sub rule_830 {
     return $record;
 }
 
-
+# Remove hyphens in FIELD$w FIELD$x and FIELD$z if it does not match ISSN
+sub rule_remove_hyphens_except_issn {
+    my ($record, $tag) = @_;
+    $record = clone($record);
+    $record = remove_hyphens_except_issn($record, $tag, ["w", "x", "z"]);
+    return $record;
+}
 
 
 sub writer {
@@ -440,6 +460,36 @@ sub replace_dashed_separator {
         }
     }
     return $record;
+}
+
+# Remove hyphens in record subfields if they do not match ISSN-format
+sub remove_hyphens_except_issn {
+    my ($record, $tag, $subfield_list) = @_;
+
+    foreach $field ($record->field($tag)) {
+        my @all_subfields = $field->subfields();
+        $field->delete_subfield(match => qr/.*/);
+        foreach my $subf (@all_subfields) {
+            foreach my $code (@{$subfield_list}) {
+                if ($subf->[0] eq $code) {
+                    if (!has_issn_format($subf->[1])) {
+                        $subf->[1] =~ s/-//g;
+                    }
+                }
+            }
+            $field->add_subfields($subf->[0] => $subf->[1]);
+        }
+    }
+    return $record;
+}
+
+# Check if value matches ISSN-format (####-###X)
+sub has_issn_format {
+    my ($value) = @_;
+    if ($value =~ /^\d\d\d\d-\d\d\d[\dXx]$/) {
+        return 1;
+    }
+    return 0;
 }
 
 1;

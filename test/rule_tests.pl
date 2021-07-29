@@ -22,6 +22,7 @@ sub test_all {
     test_all_rule_599();
     test_all_rule_440();
     test_all_rule_830();
+    test_all_rule_remove_hyphens_except_issn();
 }
 
 # Test rules applying to 041
@@ -395,7 +396,7 @@ sub test_rule_440 {
     my $new_record;
     $new_record = AdjustLibris::rule_440($record_440);
     assert_equals("Title with / in its name", $new_record->subfield('440', 'a'),
-                  "should replace _-_ with _/_ if present in $a");
+                  "should replace _-_ with _/_ if present in \$a");
 }
 
 
@@ -411,6 +412,30 @@ sub test_rule_830 {
     my $new_record;
     $new_record = AdjustLibris::rule_830($record_830);
     assert_equals("Title with / in its name", $new_record->subfield('830', 'a'),
-                  "should replace _-_ with _/_ if present in $a");
+                  "should replace _-_ with _/_ if present in \$a");
+}
+
+# Test rules applying to 830
+sub test_all_rule_remove_hyphens_except_issn {
+    test_rule_remove_hyphens_except_issn();
+}
+
+sub test_rule_remove_hyphens_except_issn {
+    my $record_760 =
+        AdjustLibris::open_record("test/data/rule_760.mrc");
+
+    my $new_record;
+    $new_record = AdjustLibris::rule_remove_hyphens_except_issn($record_760, "760");
+    my @fields = $new_record->field('760');
+    assert_equals('1234-567X', $fields[0]->subfield('w'),
+                  "should not remove hyphens in FIELD$w FIELD$x and FIELD$z if it matches an ISSN (####-####) (field0 w)");
+    assert_equals('1111-1234', $fields[1]->subfield('x'),
+                  "should not remove hyphens in FIELD$w FIELD$x and FIELD$z if it matches an ISSN (####-####) (field1 x)");
+    assert_equals('13229222333', $fields[1]->subfield('w'),
+                  "should remove hyphens in FIELD\$w FIELD\$x and FIELD\$z (field1 w)");
+    assert_equals('13229222333', $fields[2]->subfield('x'),
+                  "should remove hyphens in FIELD\$w FIELD\$x and FIELD\$z (field2 x)");
+    assert_equals('1129233333', $fields[2]->subfield('z'),
+                  "should remove hyphens in FIELD\$w FIELD\$x and FIELD\$z (field2 z)");
 }
 
