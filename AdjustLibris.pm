@@ -30,6 +30,8 @@ sub apply {
     $record = rule_084_to_089($record);
     $record = rule_130($record);
     $record = rule_222($record);
+    $record = rule_599_ind1($record);
+    $record = rule_599_remove($record);
 
     return $record;
 }
@@ -302,6 +304,39 @@ sub rule_222 {
     my ($record) = @_;
     $record = clone($record);
     $record = replace_dashed_separator($record, "222", "a");
+    return $record;
+}
+
+
+# If 599 ind1 and ind2 are blank, and LEADER is s, set ind1 to 1
+sub rule_599_ind1 {
+    my ($record) = @_;
+    $record = clone($record);
+    my $leader = $record->leader();
+    my $type = substr($leader, 7, 1);
+
+    if ($type eq "s") {
+        foreach my $f599 ($record->field('599')) {
+            if ($f599->indicator(1) eq " " && $f599->indicator(2) eq " ") {
+                $f599->set_indicator(1, "1");
+            }
+        }
+    }
+    
+    return $record;
+}
+
+# If 599 ind1 and ind2 are blank, remove the field
+sub rule_599_remove {
+    my ($record) = @_;
+    $record = clone($record);
+
+    foreach my $f599 ($record->field('599')) {
+        if ($f599->indicator(1) eq " " && $f599->indicator(2) eq " ") {
+            $record->delete_field($f599);
+        }
+    }
+    
     return $record;
 }
 

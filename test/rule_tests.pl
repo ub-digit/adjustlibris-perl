@@ -19,6 +19,7 @@ sub test_all {
     test_all_rule_084();
     test_all_rule_130();
     test_all_rule_222();
+    test_all_rule_599();
 }
 
 # Test rules applying to 041
@@ -329,4 +330,52 @@ sub test_rule_222 {
     $new_record = AdjustLibris::rule_222($record_222);
     assert_equals("Title with / in its name", $new_record->subfield('222', 'a'),
                   "should replace _-_ with _/_ if present in $a");
+}
+
+# Test rules applying to 599
+sub test_all_rule_599 {
+    test_rule_599_ind1();
+    test_rule_599_remove();
+}
+
+sub test_rule_599_ind1 {
+    my $record_599_s =
+        AdjustLibris::open_record("test/data/rule_599-s.mrc");
+    my $record_599_not_s =
+        AdjustLibris::open_record("test/data/rule_599-not_s.mrc");
+
+    my $new_record;
+    $new_record = AdjustLibris::rule_599_ind1($record_599_s);
+    my @fields = $new_record->field('599');
+    assert_equals("1", $fields[0]->indicator(1),
+                  "should change ind1 to 1 if ind1 and ind2 are blank and LEADER7 is s (ind1)");
+    assert_equals(" ", $fields[0]->indicator(2),
+                  "should change ind1 to 1 if ind1 and ind2 are blank and LEADER7 is s (ind2)");
+
+    $new_record = AdjustLibris::rule_599_ind1($record_599_not_s);
+    @fields = $new_record->field('599');
+    assert_equals(" ", $fields[0]->indicator(1),
+                  "should not change ind1 if LEADER7 is other than s (ind1)");
+    assert_equals(" ", $fields[0]->indicator(2),
+                  "should not change ind1 if LEADER7 is other than s (ind2)");
+}
+
+sub test_rule_599_remove {
+    my $record_599_not_s =
+        AdjustLibris::open_record("test/data/rule_599-not_s.mrc");
+    my $record_599_not_blank =
+        AdjustLibris::open_record("test/data/rule_599-not_blank.mrc");
+
+    my $new_record;
+    $new_record = AdjustLibris::rule_599_remove($record_599_not_s);
+    my @fields = $new_record->field('599');
+    my $field_count = @fields;
+    assert_equals(0, $field_count,
+                  "should remove 599 where ind1 and ind2 are both blank (removed)");
+
+    $new_record = AdjustLibris::rule_599_remove($record_599_not_blank);
+    @fields = $new_record->field('599');
+    $field_count = @fields;
+    assert_equals(1, $field_count,
+                  "should remove 599 where ind1 and ind2 are both blank (not removed)");
 }
