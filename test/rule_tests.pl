@@ -20,6 +20,8 @@ sub test_all {
     test_all_rule_130();
     test_all_rule_222();
     test_all_rule_599();
+    test_all_rule_440();
+    test_all_rule_830();
 }
 
 # Test rules applying to 041
@@ -379,3 +381,36 @@ sub test_rule_599_remove {
     assert_equals(1, $field_count,
                   "should remove 599 where ind1 and ind2 are both blank (not removed)");
 }
+
+
+# Test rules applying to 440
+sub test_all_rule_440 {
+    test_rule_440();
+}
+
+sub test_rule_440 {
+    my $record_440 =
+        AdjustLibris::open_record("test/data/rule_440.mrc");
+
+    my $new_record;
+    $new_record = AdjustLibris::rule_440($record_440);
+    assert_equals("Title with / in its name", $new_record->subfield('440', 'a'),
+                  "should replace _-_ with _/_ if present in $a");
+}
+
+
+# Test rules applying to 830
+sub test_all_rule_830 {
+    test_rule_830();
+}
+
+sub test_rule_830 {
+    my $record_830 =
+        AdjustLibris::open_record("test/data/rule_830.mrc");
+
+    my $new_record;
+    $new_record = AdjustLibris::rule_830($record_830);
+    assert_equals("Title with / in its name", $new_record->subfield('830', 'a'),
+                  "should replace _-_ with _/_ if present in $a");
+}
+

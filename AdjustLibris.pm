@@ -32,6 +32,8 @@ sub apply {
     $record = rule_222($record);
     $record = rule_599_ind1($record);
     $record = rule_599_remove($record);
+    $record = rule_440($record);
+    $record = rule_830($record);
 
     return $record;
 }
@@ -337,6 +339,23 @@ sub rule_599_remove {
         }
     }
     
+    return $record;
+}
+
+# If 440$a contains ' - ', replace it with ' / '
+sub rule_440 {
+    my ($record) = @_;
+    $record = clone($record);
+    $record = replace_dashed_separator($record, "440", "a");
+    return $record;
+}
+
+
+# If 830$a contains ' - ', replace it with ' / '
+sub rule_830 {
+    my ($record) = @_;
+    $record = clone($record);
+    $record = replace_dashed_separator($record, "830", "a");
     return $record;
 }
 
