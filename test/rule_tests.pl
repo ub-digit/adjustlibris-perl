@@ -416,7 +416,7 @@ sub test_rule_830 {
                   "should replace _-_ with _/_ if present in \$a");
 }
 
-# Test rules applying to 830
+# Test rules applying to 760, 762, 765, 767, 770, 772, 776, 779, 780, 785, 787
 sub test_all_rule_remove_hyphens_except_issn {
     test_rule_remove_hyphens_except_issn();
 }
