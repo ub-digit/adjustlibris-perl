@@ -24,6 +24,7 @@ sub test_all {
     test_all_rule_830();
     test_all_rule_clean_keyword_fields();
     test_all_rule_remove_hyphens_except_issn();
+    test_all_rule_clean_holding_fields();
     test_all_rule_976();
 }
 
@@ -536,6 +537,48 @@ sub test_rule_remove_hyphens_except_issn {
                   "should remove hyphens in FIELD\$w FIELD\$x and FIELD\$z (field2 x)");
     assert_equals('1129233333', $fields[2]->subfield('z'),
                   "should remove hyphens in FIELD\$w FIELD\$x and FIELD\$z (field2 z)");
+}
+
+
+# Test rules applying to 852, 866
+sub test_all_rule_clean_holding_fields {
+    test_rule_clean_holding_fields();
+}
+
+sub test_rule_clean_holding_fields {
+    my $record_old_with_c =
+        AdjustLibris::open_record("test/data/rule_852_old_with_c.mrc");
+    my $record_old_serial_with_c =
+        AdjustLibris::open_record("test/data/rule_852_old_serial_with_c.mrc");
+    my $record_old_without_c =
+        AdjustLibris::open_record("test/data/rule_852_old_without_c.mrc");
+    my $record_new_with_c =
+        AdjustLibris::open_record("test/data/rule_852_new_with_c.mrc");
+
+    my $new_record;
+    $new_record = AdjustLibris::rule_clean_holding_fields($record_old_with_c, "852");
+    my @fields = $new_record->field('852');
+    my $field_count = @fields;
+    assert_equals(3, $field_count,
+                  "should clean 852 without \\c when any 852 contains \\c for old (1970-2001) books");
+    
+    $new_record = AdjustLibris::rule_clean_holding_fields($record_old_without_c, "852");
+    @fields = $new_record->field('852');
+    $field_count = @fields;
+    assert_equals(4, $field_count,
+                  "should not clean 852 when no 852 contains \\c");
+    
+    $new_record = AdjustLibris::rule_clean_holding_fields($record_new_with_c, "852");
+    @fields = $new_record->field('852');
+    $field_count = @fields;
+    assert_equals(4, $field_count,
+                  "should not clean 852 if record is newer than 2001");
+    
+    $new_record = AdjustLibris::rule_clean_holding_fields($record_old_serial_with_c, "852");
+    @fields = $new_record->field('852');
+    $field_count = @fields;
+    assert_equals(4, $field_count,
+                  "should not clean 852 if record other than monograph");
 }
 
 

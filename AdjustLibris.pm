@@ -50,7 +50,8 @@ sub apply {
     $record = rule_remove_hyphens_except_issn($record, "780");
     $record = rule_remove_hyphens_except_issn($record, "785");
     $record = rule_remove_hyphens_except_issn($record, "787");
-    # Rules for 852, 866
+    $record = rule_clean_holding_fields($record, "852");
+    $record = rule_clean_holding_fields($record, "866");
     $record = rule_976($record);
     
     return $record;
@@ -400,6 +401,15 @@ sub rule_remove_hyphens_except_issn {
     return $record;
 }
 
+# Remove all of field tag without \c in $8 if any such field $8 contains \c
+# if it is monograph and if it is considered old (1970-2001)
+sub rule_clean_holding_fields {
+    my ($record, $tag) = @_;
+    $record = clone($record);
+    $record = clean_8_without_c($record, $tag);
+    return $record;
+}
+
 # Remove 976$a and move $b to $a if $b exists
 sub rule_976 {
     my ($record) = @_;
@@ -573,5 +583,49 @@ sub remove_duplicate_lc_if_mesh {
     return $record;
 }
 
+# Remove all of field tag without \c in $8 if any such field $8 contains \c
+# if it is monograph and if it is considered old (1970-2001)
+sub clean_8_without_c {
+    my ($record, $tag) = @_;
+
+    my $any_has_c = 0;
+    foreach my $field ($record->field($tag)) {
+        if ($field->subfield('8') && $field->subfield('8') =~ /\\c/) {
+            $any_has_c = 1;
+        }
+    }
+
+    foreach my $field ($record->field($tag)) {
+        if (is_old($record) && is_monograph($record) &&
+            $any_has_c && $field->subfield('8') && $field->subfield('8') !~ /\\c/) {
+            $record->delete_field($field);
+        }
+    }
+    return $record;
+}
+
+# Check LEADER7 for m (monograph)
+sub is_monograph {
+    my ($record) = @_;
+    if (substr($record->leader, 7, 1) eq "m") {
+        return 1;
+    }
+    return 0;
+}
+
+# Book is considered old if from 1970-2001
+sub is_old {
+    my ($record) = @_;
+    my $is_old = 0;
+    my $f008 = $record->field('008');
+    if($f008) {
+        my $year2 = substr($f008->data(), 0, 2);
+        # 1970 - 2001
+        if ($year2 >= 70 || $year2 <= 1) {
+            $is_old = 1;
+        }
+    }
+    return $is_old;
+}
 1;
 
