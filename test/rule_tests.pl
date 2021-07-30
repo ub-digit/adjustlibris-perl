@@ -22,6 +22,7 @@ sub test_all {
     test_all_rule_599();
     test_all_rule_440();
     test_all_rule_830();
+    test_all_rule_clean_keyword_fields();
     test_all_rule_remove_hyphens_except_issn();
     test_all_rule_976();
 }
@@ -414,6 +415,103 @@ sub test_rule_830 {
     $new_record = AdjustLibris::rule_830($record_830);
     assert_equals("Title with / in its name", $new_record->subfield('830', 'a'),
                   "should replace _-_ with _/_ if present in \$a");
+}
+
+# Test rules applying to 648, 650, 651, 655
+sub test_all_rule_clean_keyword_fields {
+    test_rule_clean_keyword_fields();
+}
+
+sub test_rule_clean_keyword_fields {
+    my $record_with_ind2_0 =
+        AdjustLibris::open_record("test/data/rule_650-ind2_7fast_with_ind2_0.mrc");
+    my $record_without_ind2_0 =
+        AdjustLibris::open_record("test/data/rule_650-ind2_7fast_without_ind2_0.mrc");
+    my $record_mesh_and_lc_no_dup =
+        AdjustLibris::open_record("test/data/rule_650-ind2_2_and_ind2_0_no_dup.mrc");
+    my $record_mesh_without_lc =
+        AdjustLibris::open_record("test/data/rule_650-ind2_2_without_ind2_0.mrc");
+    my $record_mesh_and_lc_with_dup =
+        AdjustLibris::open_record("test/data/rule_650-ind2_2_and_ind2_0_with_dup.mrc");
+
+    my $new_record;
+    $new_record = AdjustLibris::rule_clean_keyword_fields($record_with_ind2_0, "650");
+    my @fields = $new_record->field('650');
+    my @fast_fields = ();
+    foreach my $field (@fields) {
+        if ($field->indicator(2) eq "7" && $field->subfield('2') eq "fast") {
+            push(@fast_fields, $field);
+        }
+    }
+    my $fast_field_count = @fast_fields;
+    assert_equals(0, $fast_field_count,
+                  "should remove 650 fields with ind2 == 7 and $2 == fast when any field with ind2 == 0 exists");
+
+    $new_record = AdjustLibris::rule_clean_keyword_fields($record_without_ind2_0, "650");
+    @fields = $new_record->field('650');
+    @fast_fields = ();
+    foreach my $field (@fields) {
+        if ($field->indicator(2) eq "7" && $field->subfield('2') eq "fast") {
+            push(@fast_fields, $field);
+        }
+    }
+    $fast_field_count = @fast_fields;
+    assert_equals(3, $fast_field_count,
+                  "should not remove 650 fields with ind2 == 7 and $2 == fast when there are no ind2 == 0 fields");
+
+    $new_record = AdjustLibris::rule_clean_keyword_fields($record_mesh_without_lc, "650");
+    @fields = $new_record->field('650');
+    @mesh_fields = ();
+    foreach my $field (@fields) {
+        if ($field->indicator(2) eq "2") {
+            push(@mesh_fields, $field);
+        }
+    }
+    $mesh_field_count = @mesh_fields;
+    assert_equals(3, $mesh_field_count,
+                  "should keep all ind2 == 2 when as is when no ind2 == 0 exists");
+
+    $new_record = AdjustLibris::rule_clean_keyword_fields($record_mesh_and_lc_no_dup, "650");
+    @fields = $new_record->field('650');
+    @mesh_fields = ();
+    foreach my $field (@fields) {
+        if ($field->indicator(2) eq "2") {
+            push(@mesh_fields, $field);
+        }
+    }
+    $mesh_field_count = @mesh_fields;
+    @lc_fields = ();
+    foreach my $field (@fields) {
+        if ($field->indicator(2) eq "0") {
+            push(@lc_fields, $field);
+        }
+    }
+    my $lc_field_count = @lc_fields;
+    assert_equals(3, $mesh_field_count,
+                  "should keep all ind2 == 2 and ind2 == 0 when they do not overlap (mesh)");
+    assert_equals(3, $lc_field_count,
+                  "should keep all ind2 == 2 and ind2 == 0 when they do not overlap (lc)");
+
+    $new_record = AdjustLibris::rule_clean_keyword_fields($record_mesh_and_lc_with_dup, "650");
+    @fields = $new_record->field('650');
+    @mesh_fields = ();
+    foreach my $field (@fields) {
+        if ($field->indicator(2) eq "2") {
+            push(@mesh_fields, $field);
+        }
+    }
+    $mesh_field_count = @mesh_fields;
+    @lc_fields = ();
+    foreach my $field (@fields) {
+        if ($field->indicator(2) eq "0") {
+            push(@lc_fields, $field);
+        }
+    }
+    $lc_field_count = @lc_fields;
+    assert_equals(3, $mesh_field_count,
+                  "should keep ind2 == 2 and ind2 == 0 but only ind2 == 2 when duplicate with ind2 == 0 (mesh)");
+    assert_equals(1, $lc_field_count,
+                  "should keep ind2 == 2 and ind2 == 0 but only ind2 == 2 when duplicate with ind2 == 0 (lc)");
 }
 
 # Test rules applying to 760, 762, 765, 767, 770, 772, 776, 779, 780, 785, 787

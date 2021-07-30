@@ -34,7 +34,10 @@ sub apply {
     $record = rule_599_remove($record);
     $record = rule_440($record);
     $record = rule_830($record);
-    # Rules for 650, 648, 651, 655
+    $record = rule_clean_keyword_fields($record, "648");
+    $record = rule_clean_keyword_fields($record, "650");
+    $record = rule_clean_keyword_fields($record, "651");
+    $record = rule_clean_keyword_fields($record, "655");
     $record = rule_remove_hyphens_except_issn($record, "440");
     $record = rule_remove_hyphens_except_issn($record, "760");
     $record = rule_remove_hyphens_except_issn($record, "762");
@@ -374,6 +377,21 @@ sub rule_830 {
     return $record;
 }
 
+# If FIELD$2 contains 'fast' and ind2 is '7', remove it if
+# there exists other FIELD fields where ind2 is '0'
+#
+# If FIELD ind2 is '2' (mesh) and ind2 is '0' (LC) is in the same record,
+# keep both, but only mesh if they are duplicates.
+sub rule_clean_keyword_fields {
+    my ($record, $tag) = @_;
+    $record = clone($record);
+
+    $record = remove_fast_if_lc($record, $tag);
+    $record = remove_duplicate_lc_if_mesh($record, $tag);
+    
+    return $record;
+}
+
 # Remove hyphens in FIELD$w FIELD$x and FIELD$z if it does not match ISSN
 sub rule_remove_hyphens_except_issn {
     my ($record, $tag) = @_;
@@ -509,6 +527,50 @@ sub has_issn_format {
         return 1;
     }
     return 0;
+}
+
+# If FIELD$2 contains 'fast' and ind2 is '7', remove it if
+# there exists other records with same tag where ind2 is '0'
+sub remove_fast_if_lc {
+    my ($record, $tag) = @_;
+
+    my $has_lc = 0;
+    foreach my $field ($record->field($tag)) {
+        if ($field->indicator(2) eq "0") {
+            $has_lc = 1;
+        }
+    }
+    if ($has_lc) {
+        foreach my $field ($record->field($tag)) {
+            if ($field->indicator(2) eq "7" && $field->subfield('2') eq "fast") {
+                $record->delete_field($field);
+            }
+        }
+    }
+    return $record;
+}
+
+# If FIELD ind2 is '2' (mesh) and ind2 is '0' (LC) in the same record,
+# keep both, but only mesh if they are duplicates.
+sub remove_duplicate_lc_if_mesh {
+    my ($record, $tag) = @_;
+
+    my %mesh_fields = ();
+    foreach my $field ($record->field($tag)) {
+        if ($field->indicator(2) eq "2") {
+            my $mesh_data = substr($field->as_formatted(), 7);
+            $mesh_fields{$mesh_data} = $field;
+        }
+    }
+    foreach my $field ($record->field($tag)) {
+        if ($field->indicator(2) eq "0") {
+            my $lc_data = substr($field->as_formatted(), 7);
+            if ($mesh_fields{$lc_data}) {
+                $record->delete_field($field);
+            }
+        }
+    }
+    return $record;
 }
 
 1;
