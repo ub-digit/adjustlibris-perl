@@ -329,7 +329,7 @@ sub rule_222 {
 }
 
 
-# If 599 ind1 and ind2 are blank, and LEADER is s, set ind1 to 1
+# If 599 ind1 and ind2 are blank, and LEADER7 is s, set ind1 to 1
 sub rule_599_ind1 {
     my ($record) = @_;
     $record = clone($record);
