@@ -117,7 +117,7 @@ sub rule_030 {
     my @found_fields = ();
     my @fields_to_remove = ();
 
-    foreach $f030 ($record->field('030')) {
+    foreach my $f030 ($record->field('030')) {
         if ($f030->subfield('a')) {
             if (exists_in_arrayref($f030->as_string('a', '^^!!^^'), \@found_fields)) {
                 push(@fields_to_remove, $f030);
@@ -138,7 +138,7 @@ sub rule_035_a_issn {
     my ($record) = @_;
     $record = clone($record);
 
-    foreach $f035 ($record->field('035')) {
+    foreach my $f035 ($record->field('035')) {
         $subfield = $f035->subfield('a');
         if ($subfield) {
             if(length($subfield) == 8) {
@@ -156,7 +156,7 @@ sub rule_035_9_issn {
     my ($record) = @_;
     $record = clone($record);
 
-    foreach $f035 ($record->field('035')) {
+    foreach my $f035 ($record->field('035')) {
         $subfield = $f035->subfield('9');
         if ($subfield) {
             if(length($subfield) == 8) {
@@ -174,7 +174,7 @@ sub rule_035_9_to_a {
     my ($record) = @_;
     $record = clone($record);
 
-    foreach $f035 ($record->field('035')) {
+    foreach my $f035 ($record->field('035')) {
         $subfield = $f035->subfield('9');
         if ($subfield) {
             $f035->add_subfields('a' => $subfield);
@@ -190,7 +190,7 @@ sub rule_035_5 {
     my ($record) = @_;
     $record = clone($record);
 
-    foreach $f035 ($record->field('035')) {
+    foreach my $f035 ($record->field('035')) {
         if($f035->subfield('5')) {
             $record->delete_field($f035);
         }
@@ -208,7 +208,7 @@ sub rule_082 {
     my @found_fields = ();
     my @fields_to_remove = ();
 
-    foreach $f082 ($record->field('082')) {
+    foreach my $f082 ($record->field('082')) {
         if (exists_in_arrayref($f082->as_formatted(), \@found_fields)) {
             push(@fields_to_remove, $f082);
         } else {
@@ -226,7 +226,7 @@ sub rule_084_5_2 {
     my ($record) = @_;
     $record = clone($record);
 
-    foreach $f084 ($record->field('084')) {
+    foreach my $f084 ($record->field('084')) {
         if (!$f084->subfield('5') && !$f084->subfield('2')) {
             $record->delete_field($f084);
         }
@@ -244,7 +244,7 @@ sub rule_084_kssb {
     my @fields_to_remove = ();
     my %highest_kssb_for_a = ();
 
-    foreach $f084 ($record->field('084')) {
+    foreach my $f084 ($record->field('084')) {
         if ($f084->subfield('a') && $f084->subfield('2') =~ /^kssb/) {
             if (exists_in_arrayref($f084->as_string('a', '^^!!^^'), \@found_fields)) {
                 my $kssb_value = $f084->subfield('2');
@@ -274,7 +274,7 @@ sub rule_084_5_not2 {
     my ($record) = @_;
     $record = clone($record);
 
-    foreach $f084 ($record->field('084')) {
+    foreach my $f084 ($record->field('084')) {
         if ($f084->subfield('5') && !$f084->subfield('2')) {
             if ($f084->subfield('5') ne "Ge") {
                 $record->delete_field($f084);
@@ -290,7 +290,7 @@ sub rule_084_to_089 {
     my ($record) = @_;
     $record = clone($record);
 
-    foreach $f084 ($record->field('084')) {
+    foreach my $f084 ($record->field('084')) {
         if (!$f084->subfield('2') || $f084->subfield('2') !~ /^kssb/) {
             my $f089 = $f084->clone();
             $f089->set_tag('089');
@@ -486,7 +486,7 @@ sub exists_in_arrayref {
 sub replace_dashed_separator {
     my ($record, $tag, $subfield_code) = @_;
     my @fields = $record->field($tag);
-    foreach $field (@fields) {
+    foreach my $field (@fields) {
         my @all_subfields = $field->subfields();
         $field->delete_subfield(match => qr/.*/);
         foreach my $subf (@all_subfields) {
@@ -503,7 +503,7 @@ sub replace_dashed_separator {
 sub remove_hyphens_except_issn {
     my ($record, $tag, $subfield_list) = @_;
 
-    foreach $field ($record->field($tag)) {
+    foreach my $field ($record->field($tag)) {
         my @all_subfields = $field->subfields();
         $field->delete_subfield(match => qr/.*/);
         foreach my $subf (@all_subfields) {
